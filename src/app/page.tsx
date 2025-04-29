@@ -1,95 +1,136 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import { useEffect, useRef } from 'react';
+import {
+  DoubleSide,
+  Mesh,
+  MeshStandardMaterial,
+  PCFSoftShadowMap,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  SpotLight,
+  SRGBColorSpace,
+  Vector3,
+  WebGLRenderer
+} from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Renderer
+    const renderer = new WebGLRenderer({ antialias: true });
+    renderer.outputColorSpace = SRGBColorSpace;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = PCFSoftShadowMap;
+
+    containerRef.current.appendChild(renderer.domElement);
+
+    // Scene and Camera
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.set(4, 5, 11);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 5;
+    controls.maxDistance = 20;
+    controls.minPolarAngle = 0.5;
+    controls.maxPolarAngle = 1.5;
+    controls.autoRotate = false;
+    controls.target = new Vector3(0, 1, 0);
+    controls.update();
+
+    // Ground
+    const groundGeometry = new PlaneGeometry(20, 20, 32, 32);
+    groundGeometry.rotateX(-Math.PI / 2);
+    const groundMaterial = new MeshStandardMaterial({
+      color: 0x555555,
+      side: DoubleSide,
+    });
+    const groundMesh = new Mesh(groundGeometry, groundMaterial);
+    groundMesh.castShadow = false;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
+
+    // Light
+    const spotLight = new SpotLight(0xffffff, 3000, 100, 0.22, 1);
+    spotLight.position.set(0, 25, 0);
+    spotLight.castShadow = true;
+    spotLight.shadow.bias = -0.0001;
+    scene.add(spotLight);
+
+    // Model
+    const loader = new GLTFLoader().setPath('millennium_falcon/');
+    loader.load('scene.gltf', (gltf) => {
+      console.log('loading model');
+      const mesh = gltf.scene;
+
+      mesh.traverse((child) => {
+        if ((child as Mesh).isMesh) {
+          (child as Mesh).castShadow = true;
+          (child as Mesh).receiveShadow = true;
+        }
+      });
+
+      mesh.position.set(0, 1.05, -1);
+      scene.add(mesh);
+
+      if (progressRef.current) {
+        progressRef.current.style.display = 'none';
+      }
+    }, (xhr) => {
+      console.log(`loading ${xhr.loaded / xhr.total * 100}%`);
+    }, (error) => {
+      console.error(error);
+    });
+
+    // Resize Handler
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Animation Loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      controls.dispose();
+      renderer.dispose();
+      containerRef.current?.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  return (
+    <>
+      <div id="heading">
+        <h1>THE MILLENNIUM FALCON</h1>
+        <div className="border"></div>
+      </div>
+      <div ref={containerRef} style={{ width: '100%', height: '100vh', overflow: 'hidden' }} />
+      <div id="progress-container" ref={progressRef}>
+        <div id="progress">Engaging Hyperdrive...</div>
+      </div>
+    </>
   );
 }
