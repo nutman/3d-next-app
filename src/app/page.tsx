@@ -32,12 +32,12 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       event.preventDefault();
-      keysPressed.current[event.key.toLowerCase()] = true;
+      keysPressed.current[event.code] = true;
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
       event.preventDefault();
-      keysPressed.current[event.key.toLowerCase()] = false;
+      keysPressed.current[event.code] = false;
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -138,26 +138,26 @@ export default function Home() {
     window.addEventListener('resize', handleResize);
 
     const moveMap: { [key: string]: (rotationY: number | never) => void } = {
-      w: (rotationY: number) => {
+      KeyW: (rotationY: number) => {
         playerGroup!.position.x += Math.sin(rotationY) * speed;
         playerGroup!.position.z += Math.cos(rotationY) * speed;
       },
-      s: (rotationY: number) => {
+      KeyS: (rotationY: number) => {
         playerGroup!.position.x -= Math.sin(rotationY) * speed;
         playerGroup!.position.z -= Math.cos(rotationY) * speed;
       },
-      a: (rotationY: number) => {
+      KeyA: (rotationY: number) => {
         playerGroup!.position.x += Math.cos(rotationY) * speed;
         playerGroup!.position.z -= Math.sin(rotationY) * speed;
       },
-      d: (rotationY: number) => {
+      KeyD: (rotationY: number) => {
         playerGroup!.position.x -= Math.cos(rotationY) * speed;
         playerGroup!.position.z += Math.sin(rotationY) * speed;
       },
       arrowup: () => (playerGroup!.position.y += speed),
       arrowdown: () => (playerGroup!.position.y = Math.max(playerGroup!.position.y - speed, minY)),
-      q: () => (playerGroup!.rotation.y += rotationSpeed),
-      e: () => (playerGroup!.rotation.y -= rotationSpeed),
+      KeyQ: () => (playerGroup!.rotation.y += rotationSpeed),
+      KeyE: () => (playerGroup!.rotation.y -= rotationSpeed),
     };
 
 
