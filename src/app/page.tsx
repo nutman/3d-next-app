@@ -154,8 +154,8 @@ export default function Home() {
         playerGroup!.position.x -= Math.cos(rotationY) * speed;
         playerGroup!.position.z += Math.sin(rotationY) * speed;
       },
-      arrowup: () => (playerGroup!.position.y += speed),
-      arrowdown: () => (playerGroup!.position.y = Math.max(playerGroup!.position.y - speed, minY)),
+      ArrowUp: () => (playerGroup!.position.y += speed),
+      ArrowDown: () => (playerGroup!.position.y = Math.max(playerGroup!.position.y - speed, minY)),
       KeyQ: () => (playerGroup!.rotation.y += rotationSpeed),
       KeyE: () => (playerGroup!.rotation.y -= rotationSpeed),
     };
