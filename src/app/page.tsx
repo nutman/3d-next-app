@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  DoubleSide,
+  DoubleSide, Group,
   Mesh,
   MeshStandardMaterial,
   PCFSoftShadowMap,
@@ -17,9 +17,36 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const speed = 0.1;
+const minY = 1.05;
+const rotationSpeed = 0.03;
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+
+  const keysPressed = useRef<{ [key: string]: boolean }>({});
+  let playerGroup: Group | null = null;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      keysPressed.current[event.key.toLowerCase()] = true;
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      event.preventDefault();
+      keysPressed.current[event.key.toLowerCase()] = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -87,6 +114,8 @@ export default function Home() {
       mesh.position.set(0, 1.05, -1);
       scene.add(mesh);
 
+      playerGroup = mesh;
+
       if (progressRef.current) {
         progressRef.current.style.display = 'none';
       }
@@ -104,9 +133,43 @@ export default function Home() {
     };
     window.addEventListener('resize', handleResize);
 
+    const moveMap: { [key: string]: (rotationY: number | never) => void } = {
+      w: (rotationY: number) => {
+        playerGroup!.position.x += Math.sin(rotationY) * speed;
+        playerGroup!.position.z += Math.cos(rotationY) * speed;
+      },
+      s: (rotationY: number) => {
+        playerGroup!.position.x -= Math.sin(rotationY) * speed;
+        playerGroup!.position.z -= Math.cos(rotationY) * speed;
+      },
+      a: (rotationY: number) => {
+        playerGroup!.position.x += Math.cos(rotationY) * speed;
+        playerGroup!.position.z -= Math.sin(rotationY) * speed;
+      },
+      d: (rotationY: number) => {
+        playerGroup!.position.x -= Math.cos(rotationY) * speed;
+        playerGroup!.position.z += Math.sin(rotationY) * speed;
+      },
+      arrowup: () => (playerGroup!.position.y += speed),
+      arrowdown: () => (playerGroup!.position.y = Math.max(playerGroup!.position.y - speed, minY)),
+      q: () => (playerGroup!.rotation.y += rotationSpeed),
+      e: () => (playerGroup!.rotation.y -= rotationSpeed),
+    };
+
+
     // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
+
+      if (playerGroup) {
+        const rotationY = playerGroup.rotation.y;
+        Object.keys(keysPressed.current).forEach((key) => {
+          if (keysPressed.current[key] && moveMap[key]) {
+            moveMap[key](rotationY);
+          }
+        });
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };
@@ -125,6 +188,7 @@ export default function Home() {
     <>
       <div id="heading">
         <h1>THE MILLENNIUM FALCON</h1>
+        <h2>Press W, A, S, D to move the ship | Press Arrow Up to ascend | Press Arrow Down to descend</h2>
         <div className="border"></div>
       </div>
       <div ref={containerRef} style={{ width: '100%', height: '100vh', overflow: 'hidden' }} />
