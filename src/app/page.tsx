@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
+  AmbientLight,
   DoubleSide, Group,
   Mesh,
   MeshStandardMaterial,
@@ -80,7 +81,7 @@ export default function Home() {
     controls.update();
 
     // Ground
-    const groundGeometry = new PlaneGeometry(20, 20, 32, 32);
+    const groundGeometry = new PlaneGeometry(120, 120, 32, 32);
     groundGeometry.rotateX(-Math.PI / 2);
     const groundMaterial = new MeshStandardMaterial({
       color: 0x555555,
@@ -92,11 +93,14 @@ export default function Home() {
     scene.add(groundMesh);
 
     // Light
-    const spotLight = new SpotLight(0xffffff, 3000, 100, 0.22, 1);
-    spotLight.position.set(0, 25, 0);
+    const spotLight = new SpotLight(0xffffff, 3000, 200, 0.22, 0.5);
+    const ambientLight = new AmbientLight(0xffffff, 0.5);
+
+    spotLight.position.set(0, 35, 0);
     spotLight.castShadow = true;
     spotLight.shadow.bias = -0.0001;
     scene.add(spotLight);
+    scene.add(ambientLight);
 
     // Model
     const loader = new GLTFLoader().setPath('millennium_falcon/');
@@ -188,7 +192,7 @@ export default function Home() {
     <>
       <div id="heading">
         <h1>THE MILLENNIUM FALCON</h1>
-        <h2>Press W, A, S, D to move the ship | Press Arrow Up to ascend | Press Arrow Down to descend</h2>
+        <h2>Press W, A, S, D to move the ship | Press Arrow Up to ascend | Press Arrow Down to descend | Press Q to rotate left | Press E to rotate right</h2>
         <div className="border"></div>
       </div>
       <div ref={containerRef} style={{ width: '100%', height: '100vh', overflow: 'hidden' }} />
